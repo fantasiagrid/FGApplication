@@ -25,8 +25,11 @@ class MotionFileManager {
         
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         
-        if FileManager.default.fileExists(atPath: self.fileURL.path) == false {
-            createNewFile(fileURL: self.fileURL)
+        if FileManager.default.fileExists(atPath: self.fileURL.path) {
+            deleteFile(at: self.fileURL)
+            createNewFile(at: self.fileURL)
+        } else {
+            createNewFile(at: self.fileURL)
         }
     }
 }
@@ -76,11 +79,6 @@ extension MotionFileManager {
     }
     
     func flush() {
-        guard xs.count == ys.count, ys.count == zs.count else {
-            Logger.shared.log(message: "⚠️ Dimension mismatch in buffered data")
-            return
-        }
-
         var rows: [String] = []
         for i in 0..<xs.count {
             let eventType = "Receive"
@@ -92,6 +90,7 @@ extension MotionFileManager {
         appendToFile(fileURL: self.fileURL, rows: rows)
 
         // Clear buffers after saving
+        dates.removeAll()
         xs.removeAll()
         ys.removeAll()
         zs.removeAll()
@@ -115,7 +114,17 @@ extension MotionFileManager {
 
 // MARK: File handling
 extension MotionFileManager {
-    func createNewFile(fileURL: URL) {
+    func deleteFile(at fileURL: URL) {
+        let fileManager = FileManager.default
+        do {
+            try fileManager.removeItem(at: fileURL)
+            print("\(fileURL.path) is deleted")
+        } catch {
+            print("\(fileURL.path) is not deleted. Error: \(error)")
+        }
+    }
+    
+    func createNewFile(at fileURL: URL) {
         let header = "EventType,Time,x,y,z,Description\n"
         do {
             try header.write(to: fileURL, atomically: true, encoding: .utf8)

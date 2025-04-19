@@ -19,11 +19,12 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     
     public var locationManager = CLLocationManager()
     public var notificables: [NotifableLocation] = []
+    
     public var isMonitoringLocation: Bool = false
+    public var startMonitoringTime: Date?
+    public var stopMonitoringTime: Date?
     
     private var locationUpdateTimer: Timer?
-    private let locationFileManager = LocationFileManager(fileName: "location_data")
-    
     
     override init() {
         super.init()
@@ -78,7 +79,7 @@ extension LocationManager {
                                                    selector: #selector(fetchLocation),
                                                    userInfo: nil,
                                                    repeats: true)
-        locationFileManager.startMonitoring()
+        DummyFileManager.shared.locationFileManager.startMonitoring()
     }
     
     func stopRequestWithInterval() {
@@ -87,7 +88,7 @@ extension LocationManager {
         isMonitoringLocation = false
         locationUpdateTimer?.invalidate()
         locationUpdateTimer = nil
-        locationFileManager.stopMonitoring()
+        DummyFileManager.shared.locationFileManager.stopMonitoring()
     }
     
     func startUpdatingLocation(distanceFilter: CLLocationDistance = kCLDistanceFilterNone,
@@ -97,19 +98,23 @@ extension LocationManager {
         // We can't determine the frequency of requesting location, but the location is updated depending on the distanceFilter & desiredAccuracy
         isMonitoringLocation = true
         
-        locationManager.distanceFilter = distanceFilter
+        startMonitoringTime = Date()
+        
+        locationManager.distanceFilter = distanceFilter // unit: m
         locationManager.desiredAccuracy = desiredAccuracy
         locationManager.startUpdatingLocation()
         
-        locationFileManager.startMonitoring()
+        DummyFileManager.shared.locationFileManager.startMonitoring()
     }
     
     func stopUpdatingLocation() {
         isMonitoringLocation = false
         
+        stopMonitoringTime = Date()
+        
         locationManager.stopUpdatingLocation()
         
-        locationFileManager.stopMonitoring()
+        DummyFileManager.shared.locationFileManager.stopMonitoring()
     }
 }
 
@@ -118,16 +123,25 @@ extension LocationManager {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if let location = locations.first {
             for noti in notificables {
-                noti.receiveLocation(data: location)
+                if BuildScheme.type == .poseTest {
+                    noti.receiveLocation(data: location)
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + CoordinateMapper.shared.loadingInterval) {
+                        noti.receiveLocation(data: location)
+                    }
+                } else {
+                    noti.receiveLocation(data: location)
+                }
             }
             
-            locationFileManager.recordLocationData(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
+            DummyFileManager.shared.locationFileManager.recordLocationData(latitude: location.coordinate.latitude,
+                                                                           longitude: location.coordinate.longitude)
         }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Logger.shared.log(message: "LocationManager Manager: error: \(error.localizedDescription)")
-        locationFileManager.saveError(description: error.localizedDescription)
+        DummyFileManager.shared.locationFileManager.saveError(description: error.localizedDescription)
     }
 }
 

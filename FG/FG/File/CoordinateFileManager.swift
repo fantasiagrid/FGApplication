@@ -1,23 +1,24 @@
 //
-//  CSVManager.swift
-//  Location
+//  CoordinateFileManager.swift
+//  FG
 //
-//  Created by 윤서진 on 3/7/25.
+//  Created by 윤서진 on 4/14/25.
 //
 
 import Foundation
 
-class LocationFileManager {
+class CoordinateFileManager {
     private let fileName: String
     private let fileURL: URL
     private let bufferSize: Int
     private let formatter = ISO8601DateFormatter()
     
     private var dates: [Date] = []
-    private var latitudes: [Double] = []
-    private var longitudes: [Double] = []
+    private var xs: [Double] = []
+    private var ys: [Double] = []
+    private var zs: [Double] = []
     
-    init(fileName: String, bufferSize: Int = 10) {
+    init(fileName: String, bufferSize: Int = 1) {
         self.fileName = "\(fileName).csv"
         self.fileURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent(fileName)
         self.bufferSize = bufferSize
@@ -32,65 +33,39 @@ class LocationFileManager {
         }
     }
 }
-
-// MARK: Monitoring
-extension LocationFileManager {
-    func startMonitoring() {
-        let eventType = "startMonitoring"
-        let formattedTime = formatter.string(from: Date())
-        let latitude = ""
-        let longitude = ""
-        let description = ""
-        let newRow = "\(eventType),\(formattedTime),\(latitude),\(longitude),\(description)\n"
-        appendToFile(fileURL: self.fileURL, rows: [newRow])
+    
+// MARK: Write data
+extension CoordinateFileManager {
+    func recordData(x: Double, y: Double, z: Double) {
+        dates.append(Date())
+        xs.append(x)
+        ys.append(y)
+        zs.append(z)
         
-        Logger.shared.log(message: "Start monitoring: \(newRow)")
+        if xs.count >= bufferSize {
+            flush()
+        }
     }
     
-    func stopMonitoring() {
-        flush()
-        let eventType = "stopMonitoring"
-        let formattedTime = formatter.string(from: Date())
-        let latitude = ""
-        let longitude = ""
-        let description = ""
-        let newRow = "\(eventType),\(formattedTime),\(latitude),\(longitude),\(description)\n"
-        
-        appendToFile(fileURL: self.fileURL, rows: [newRow])
-        Logger.shared.log(message: "Stop monitoring: \(newRow)")
-    }
-}
-
-// MARK: Write data
-extension LocationFileManager {
     func flush() {
         var rows: [String] = []
-        for i in 0..<latitudes.count {
+        for i in 0..<xs.count {
             let eventType = "Receive"
             let formattedTime = formatter.string(from: dates[i])
             let description = ""
-            let newRow = "\(eventType),\(formattedTime),\(latitudes[i].description),\(longitudes[i].description),\(description)\n"
+            let newRow = "\(eventType),\(formattedTime),\(xs[i]),\(ys[i]),\(zs[i]),\(description)\n"
             rows.append(newRow)
         }
         appendToFile(fileURL: self.fileURL, rows: rows)
 
         // Clear buffers after saving
-        self.dates.removeAll()
-        self.latitudes.removeAll()
-        self.longitudes.removeAll()
+        dates.removeAll()
+        xs.removeAll()
+        ys.removeAll()
+        zs.removeAll()
         
         // Log
         Logger.shared.log(message: "Flushed")
-    }
-    
-    func recordLocationData(latitude: Double, longitude: Double) {
-        dates.append(Date())
-        latitudes.append(latitude)
-        longitudes.append(longitude)
-        
-        if latitudes.count >= self.bufferSize {
-            flush()
-        }
     }
     
     func saveError(description: String) {
@@ -98,15 +73,16 @@ extension LocationFileManager {
         
         let eventType = "Error"
         let formattedTime = formatter.string(from: Date())
-        let latitude = ""
-        let longitude = ""
-        let newRow = "\(eventType),\(formattedTime),\(latitude),\(longitude),\(description)\n"
+        let x = ""
+        let y = ""
+        let z = ""
+        let newRow = "\(eventType),\(formattedTime),\(x),\(y),\(z),\(description)\n"
         appendToFile(fileURL: self.fileURL, rows: [newRow])
     }
 }
 
 // MARK: File handling
-extension LocationFileManager {
+extension CoordinateFileManager {
     func deleteFile(at fileURL: URL) {
         let fileManager = FileManager.default
         do {
@@ -116,11 +92,11 @@ extension LocationFileManager {
             print("\(fileURL.path) is not deleted. Error: \(error)")
         }
     }
-
+    
     func createNewFile(at fileURL: URL) {
-        let header = "EventType,Time,Latitude,Longitude,Description\n"
+        let header = "EventType,Time,x,y,z,Description\n"
         do {
-            try (header).write(to: fileURL, atomically: true, encoding: .utf8)
+            try header.write(to: fileURL, atomically: true, encoding: .utf8)
             Logger.shared.log(message: "CSV file created at \(fileURL.path)")
         } catch {
             Logger.shared.log(message: "Error creating CSV file: \(error)")

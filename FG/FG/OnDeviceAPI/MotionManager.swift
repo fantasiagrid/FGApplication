@@ -19,8 +19,7 @@ class MotionManager: NSObject, ObservableObject {
     public var isMonitoringGyroscope: Bool = false
     
     private let motionManager = CMMotionManager()
-    private let accelerationFileManager = MotionFileManager(fileName: "acceleration_data", bufferSize: 100)
-    private let gyroscopeFileManager = MotionFileManager(fileName: "gyroscope_data", bufferSize: 100)
+    
     
     public var notificables: [NotifableMotion] = []
     
@@ -58,7 +57,7 @@ extension MotionManager {
             return
         }
         self.isMonitoringAcceleration = true
-        self.accelerationFileManager.startMonitoring()
+        DummyFileManager.shared.accelerationFileManager.startMonitoring()
         
         motionManager.accelerometerUpdateInterval = TimeInterval(1 / frequency)
         motionManager.startAccelerometerUpdates(to: OperationQueue.current!) { data, error in
@@ -71,14 +70,14 @@ extension MotionManager {
                 noti.receiveAccelerationData(data: data)
             }
             
-            self.accelerationFileManager.recordMotionData(x: data.acceleration.x, y: data.acceleration.y, z: data.acceleration.z)
+            DummyFileManager.shared.accelerationFileManager.recordMotionData(x: data.acceleration.x, y: data.acceleration.y, z: data.acceleration.z)
         }
     }
     
     func stopUpdatingAcceleration() {
         self.isMonitoringAcceleration = false
         self.motionManager.stopAccelerometerUpdates()
-        self.accelerationFileManager.stopMonitoring()
+        DummyFileManager.shared.accelerationFileManager.stopMonitoring()
     }
 }
 
@@ -101,7 +100,7 @@ extension MotionManager {
     }
     
     func startUpdatingGroscope(frequency: Int = GroscopeFrequency.maximum.rawValue) {
-        self.gyroscopeFileManager.startMonitoring()
+        DummyFileManager.shared.groscopeFileManager.startMonitoring()
         
         self.isMonitoringGyroscope = true
         motionManager.gyroUpdateInterval = TimeInterval(1 / frequency)
@@ -115,13 +114,13 @@ extension MotionManager {
                 noti.receiveGyroscopeData(data: data)
             }
             
-            self.gyroscopeFileManager.recordMotionData(x: data.rotationRate.x, y: data.rotationRate.y, z: data.rotationRate.z)
+            DummyFileManager.shared.groscopeFileManager.recordMotionData(x: data.rotationRate.x, y: data.rotationRate.y, z: data.rotationRate.z)
         }
     }
     
     func stopUpdatingGyroscope() {
         self.isMonitoringGyroscope = false
         self.motionManager.stopGyroUpdates()
-        self.gyroscopeFileManager.stopMonitoring()
+        DummyFileManager.shared.groscopeFileManager.stopMonitoring()
     }
 }

@@ -11,13 +11,14 @@ import SwiftUI
 struct FGApp: App {
     @State private var appModel = AppModel()
     @Environment(\.scenePhase) private var scenePhase
+    let fileManager = DummyFileManager.shared
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(appModel)
         }
-
+        
         ImmersiveSpace(id: appModel.immersiveSpaceID) {
             ImmersiveView()
                 .environment(appModel)
@@ -58,3 +59,4 @@ struct FGApp: App {
         }
     }
 }
+

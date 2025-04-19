@@ -11,46 +11,33 @@ import RealityKitContent
 import simd
 
 struct ImmersiveView: View {
-    let visionPro = VisionPro()
+    let coordinateMapper = CoordinateMapper.shared
     
     var body: some View {
         RealityView { content in
-            // Add entity
+            /*
             if let appleEntity = try? await Entity(named: "Character", in: realityKitContentBundle) {
                 content.add(appleEntity)
                 appleEntity.position = [0, 0, -3]
+                appleEntity.transform.scale = [10, 10, 10]
+            }*/
+            
+            coordinateMapper.initRotationMatrix()
+        
+            // 37.555503, 127.047632 운동장
+            // 37.560348, 127.040708
+            // 37.556955, 127.047640 한양 사이버대
+            // 37.565898, 127.055460 투썸
+            let obj_coord = GeographicCoordinate(date: Date(), latitude: 37.565898, longitude: 127.055460, altitude: 0)
+            let obj_pos = coordinateMapper.calcObjectPosition(objGeographicData: obj_coord)
+            if let appleEntity = try? await Entity(named: "Character", in: realityKitContentBundle) {
+                content.add(appleEntity)
+                
+                appleEntity.position = [Float(obj_pos!.x), Float(obj_pos!.y), Float(obj_pos!.z)]
+                appleEntity.transform.scale = [10, 10, 10]
             }
             
-            // Pose
-            _ = content.subscribe(to: SceneEvents.Update.self) { _ in
-                Task {
-                    let mat = await visionPro.transformMatrix()
-                    let x = await visionPro.transformMatrix().columns.3.x
-                    let y = await visionPro.transformMatrix().columns.3.y
-                    let z = await visionPro.transformMatrix().columns.3.z
-                    print(String(format: "%.2f, %.2f, %.2f", x, y, z))
-                }
-            }
-        }.task {
-            await visionPro.runArkitSession()
-        }
-    }
-}
-
-import ARKit
-@Observable class VisionPro {
-    let session = ARKitSession()
-    let worldTracking = WorldTrackingProvider()
-    
-    func transformMatrix() async -> simd_float4x4 {
-        guard let deviceAnchor = worldTracking.queryDeviceAnchor(atTimestamp: .zero)
-        else { return .init() }
-        return deviceAnchor.originFromAnchorTransform
-    }
-    
-    func runArkitSession() async {
-        Task {
-            try? await session.run([worldTracking])
+            DummyFileManager.shared.coordinateFileManager.recordData(x: obj_pos!.x, y: obj_pos!.y, z: obj_pos!.z)
         }
     }
 }

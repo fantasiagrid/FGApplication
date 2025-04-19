@@ -12,6 +12,8 @@ import RealityKitContent
 import CoreLocation
 import CoreMotion
 
+import AudioToolbox
+
 struct ContentView: View {
     @State private var selectedVideoURL: URL?
     
@@ -25,7 +27,12 @@ struct ContentView: View {
     
     private let locationDataManager = LocationManager.shared
     private let motionManager = MotionManager.shared
+    private let coordinateMapper = CoordinateMapper.shared
     
+    // TODO: Remove
+    @Environment(AppModel.self) private var appModel
+    @Environment(\.openImmersiveSpace) private var openImmersiveSpace
+
     var body: some View {
         VStack {
             Model3D(named: "Scene", bundle: realityKitContentBundle)
@@ -88,6 +95,13 @@ struct ContentView: View {
                 }) {
                     Text("Reqeust URL")
                 }
+                
+                // Sound
+                Button(action: {
+                    AudioServicesPlaySystemSound(1003)
+                }) {
+                    Text("Beep")
+                }
             }
             
             Text(locationText).padding()
@@ -104,6 +118,7 @@ struct ContentView: View {
                          accuracy: locationDataManager.locationManager.accuracyAuthorization)
         }
         .padding()
+        
     }
 }
 
@@ -134,10 +149,31 @@ extension ContentView: NotifableLocation {
     }
     
     func receiveLocation(data: CLLocation) {
+        let locationTime = Date()
+        
         let locStr = "\(data.coordinate.latitude.description), \(data.coordinate.longitude.description)"
+        coordinateMapper.receiveGeographicData(GeographicCoordinate(date: locationTime,
+                                                                    latitude: data.coordinate.latitude,
+                                                                    longitude: data.coordinate.longitude,
+                                                                    altitude: 0))
         
         locationText = "\(locStr)"
         Logger.shared.log(message: "receive location: \(locationText)")
+        
+        guard let startMonitoringTime = locationDataManager.startMonitoringTime else {
+            return
+        }
+        
+        let timeInterval = startMonitoringTime.timeIntervalSince(locationTime)
+        if abs(timeInterval) > CoordinateMapper.shared.loadingInterval {
+            Task {
+                if appModel.immersiveSpaceState == .closed {
+                    print("Open Immersive View")
+                    AudioServicesPlaySystemSound(1007)
+                    await openImmersiveSpace(id: appModel.immersiveSpaceID)
+                }
+            }
+        }
     }
 }
 
