@@ -105,6 +105,33 @@ extension LocationManager {
         locationManager.startUpdatingLocation()
         
         DummyFileManager.shared.locationFileManager.startMonitoring()
+        
+        if BuildScheme.type == .poseTest {
+            let halfLoadingTime = CoordinateMapper.shared.loadingInterval / 2
+            let locInterval = CoordinateMapper.shared.loadingInterval / 10
+            
+            // 지금부터 1초에 한번씩 위치정보를 보냄
+            for time in stride(from: 0,
+                            to: CoordinateMapper.shared.loadingInterval,
+                            by: locInterval) {
+                let testLocation: CLLocation
+                if time < halfLoadingTime {
+                    testLocation = CLLocation.init(latitude: BuildScheme.testPoseCoordinates.startCoord.latitude,
+                                                   longitude: BuildScheme.testPoseCoordinates.startCoord.longitude)
+                } else {
+                    testLocation = CLLocation.init(latitude: BuildScheme.testPoseCoordinates.moveCoord.latitude,
+                                                   longitude: BuildScheme.testPoseCoordinates.moveCoord.longitude)
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(time)) {
+                    self.locationManager(self.locationManager,
+                                         didUpdateLocations: [
+                                            CLLocation.init(latitude: 0, longitude: 0),
+                                            testLocation,
+                                         ])
+                }
+            }
+        }
     }
     
     func stopUpdatingLocation() {
@@ -121,22 +148,20 @@ extension LocationManager {
 // MARK: - Receive location & error
 extension LocationManager {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        if let location = locations.first {
-            for noti in notificables {
-                if BuildScheme.type == .poseTest {
-                    noti.receiveLocation(data: location)
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + CoordinateMapper.shared.loadingInterval) {
-                        noti.receiveLocation(data: location)
-                    }
-                } else {
-                    noti.receiveLocation(data: location)
-                }
-            }
-            
-            DummyFileManager.shared.locationFileManager.recordLocationData(latitude: location.coordinate.latitude,
-                                                                           longitude: location.coordinate.longitude)
+        let location: CLLocation?
+        if BuildScheme.type == .poseTest {
+            location = locations.indices.contains(1) ? locations[1] : nil
+        } else {
+            location = locations.first
         }
+        
+        guard let location = location else { return }
+        for noti in notificables {
+            noti.receiveLocation(data: location)
+        }
+        
+        DummyFileManager.shared.locationFileManager.recordLocationData(latitude: location.coordinate.latitude,
+                                                                       longitude: location.coordinate.longitude)
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {

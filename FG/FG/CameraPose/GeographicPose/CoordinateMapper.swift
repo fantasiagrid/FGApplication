@@ -28,7 +28,7 @@ class CoordinateMapper {
     }
     
     var loadingInterval: TimeInterval {
-        return 1
+        return 10
     }
     
     private func estimatePose() -> Double? {
@@ -38,22 +38,20 @@ class CoordinateMapper {
         var moveCoord: GeographicCoordinate
         
         let halfLoadingTime = loadingInterval / 2
-        if BuildScheme.type == .poseTest {
-            startCoord = GeographicCoordinate(date: nil, latitude: 37.565777, longitude: 127.055805, altitude: 0)
-            moveCoord = GeographicCoordinate(date: nil, latitude: 37.565938, longitude: 127.055577, altitude: 0)
-        } else {
-            let filteredStartCoordinates: [GeographicCoordinate] = AVP_geoGrapicCoords.filter { coordinate in
-                let timeInterval = coordinate.date!.timeIntervalSince(AVP_geoGrapicCoords[0].date!)
-                return abs(timeInterval - 0.0) <= halfLoadingTime
-            }
-            startCoord = calculateAverageOfCoordinates(in: filteredStartCoordinates)!
-            
-            let filteredEndCoordinates: [GeographicCoordinate] = AVP_geoGrapicCoords.filter { coordinate in
-                let timeInterval = coordinate.date!.timeIntervalSince(AVP_geoGrapicCoords.last!.date!)
-                return abs(timeInterval - 0.0) <= halfLoadingTime
-            }
-            moveCoord = calculateAverageOfCoordinates(in: filteredEndCoordinates)!
+        let filteredStartCoordinates: [GeographicCoordinate] = AVP_geoGrapicCoords.filter { coordinate in
+            var timeInterval = coordinate.date!.timeIntervalSince(AVP_geoGrapicCoords[0].date!)
+            timeInterval = Double(round(1000 * timeInterval) / 1000)
+            return abs(timeInterval) < halfLoadingTime
         }
+        startCoord = calculateAverageOfCoordinates(in: filteredStartCoordinates)!
+        
+        let filteredEndCoordinates: [GeographicCoordinate] = AVP_geoGrapicCoords.filter { coordinate in
+            var timeInterval = coordinate.date!.timeIntervalSince(AVP_geoGrapicCoords.last!.date!)
+            timeInterval = Double(round(1000 * timeInterval) / 1000)
+            return abs(timeInterval) < halfLoadingTime
+        }
+        moveCoord = calculateAverageOfCoordinates(in: filteredEndCoordinates)!
+        
         AVP_geoGraphicRefCoord = moveCoord
         
         DummyFileManager.shared.eventLocationFileManager.receiveGeograpicData(eventType: "startCoord",
@@ -63,7 +61,8 @@ class CoordinateMapper {
         DummyFileManager.shared.eventLocationFileManager.receiveGeograpicData(eventType: "ReferenceCoord",
                                                                               latitude: moveCoord.latitude,
                                                                               longitude: moveCoord.longitude)
-        
+        print("startCoord (x, y, z): \(startCoord)")
+        print("moveCoord (x, y, z): \(moveCoord)")
         
         let enu1SecondLater = geodeticToEnu(lat: moveCoord.latitude,
                                             lon: moveCoord.longitude,

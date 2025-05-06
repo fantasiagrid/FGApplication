@@ -1,8 +1,7 @@
 {
   "advancedEditorSelectedIdentifier" : "ProjectBrowser",
   "openSceneRelativePaths" : [
-    "Materials\/GridMaterial.usda",
-    "Immersive.usda"
+
   ],
   "recentIdentifiers" : {
 
@@ -169,6 +168,5 @@
   },
   "sceneViewportBackgroundColors" : {
 
-  },
-  "selectedSceneRelativePath" : "Immersive.usda"
+  }
 }
