@@ -79,7 +79,9 @@ extension LocationManager {
                                                    selector: #selector(fetchLocation),
                                                    userInfo: nil,
                                                    repeats: true)
-        DummyFileManager.shared.locationFileManager.startMonitoring()
+
+        DummyFileManager.shared.location.append(date: Date(),
+                                                values: ["startMonitoring", "", ""])
     }
     
     func stopRequestWithInterval() {
@@ -88,7 +90,9 @@ extension LocationManager {
         isMonitoringLocation = false
         locationUpdateTimer?.invalidate()
         locationUpdateTimer = nil
-        DummyFileManager.shared.locationFileManager.stopMonitoring()
+        
+        DummyFileManager.shared.location.append(date: Date(),
+                                                values: ["stopMonitoring", "", ""])
     }
     
     func startUpdatingLocation(distanceFilter: CLLocationDistance = kCLDistanceFilterNone,
@@ -104,9 +108,9 @@ extension LocationManager {
         locationManager.desiredAccuracy = desiredAccuracy
         locationManager.startUpdatingLocation()
         
-        DummyFileManager.shared.locationFileManager.startMonitoring()
+        DummyFileManager.shared.location.startMonitoring(date: Date())
         
-        if BuildScheme.type == .poseTest {
+        if BuildScheme.type == .test {
             let halfLoadingTime = CoordinateMapper.shared.loadingInterval / 2
             let locInterval = CoordinateMapper.shared.loadingInterval / 10
             
@@ -141,7 +145,7 @@ extension LocationManager {
         
         locationManager.stopUpdatingLocation()
         
-        DummyFileManager.shared.locationFileManager.stopMonitoring()
+        DummyFileManager.shared.location.stopMonitoring(date: Date())
     }
 }
 
@@ -149,7 +153,7 @@ extension LocationManager {
 extension LocationManager {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         let location: CLLocation?
-        if BuildScheme.type == .poseTest {
+        if BuildScheme.type == .test {
             location = locations.indices.contains(1) ? locations[1] : nil
         } else {
             location = locations.first
@@ -160,13 +164,17 @@ extension LocationManager {
             noti.receiveLocation(data: location)
         }
         
-        DummyFileManager.shared.locationFileManager.recordLocationData(latitude: location.coordinate.latitude,
-                                                                       longitude: location.coordinate.longitude)
+        DummyFileManager.shared.location.append(date: Date(),
+                                                values: ["receive",
+                                                         location.coordinate.latitude.description,
+                                                         location.coordinate.longitude.description])
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Logger.shared.log(message: "LocationManager Manager: error: \(error.localizedDescription)")
-        DummyFileManager.shared.locationFileManager.saveError(description: error.localizedDescription)
+        
+        DummyFileManager.shared.location.append(date: Date(),
+                                                values: [error.localizedDescription, "", ""])
     }
 }
 

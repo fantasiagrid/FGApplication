@@ -24,3 +24,15 @@ enum LocationAccuracy {
         }
     }
 }
+
+struct LocationData {
+    let latitude: Double
+    let longitude: Double
+    let altitude: Double
+}
+
+struct CoordinateData {
+    let x: Double
+    let y: Double
+    let z: Double
+}

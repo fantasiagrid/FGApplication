@@ -28,7 +28,7 @@ class CoordinateMapper {
     }
     
     var loadingInterval: TimeInterval {
-        return 10
+        return 1
     }
     
     private func estimatePose() -> Double? {
@@ -54,15 +54,15 @@ class CoordinateMapper {
         
         AVP_geoGraphicRefCoord = moveCoord
         
-        DummyFileManager.shared.eventLocationFileManager.receiveGeograpicData(eventType: "startCoord",
-                                                                              latitude: startCoord.latitude,
-                                                                              longitude: startCoord.longitude)
+        DummyFileManager.shared.eventLocation.append(date: Date(),
+                                                     values: ["startCoord",
+                                                              startCoord.latitude.description,
+                                                              startCoord.longitude.description])
         
-        DummyFileManager.shared.eventLocationFileManager.receiveGeograpicData(eventType: "ReferenceCoord",
-                                                                              latitude: moveCoord.latitude,
-                                                                              longitude: moveCoord.longitude)
-        print("startCoord (x, y, z): \(startCoord)")
-        print("moveCoord (x, y, z): \(moveCoord)")
+        DummyFileManager.shared.eventLocation.append(date: Date(),
+                                                     values: ["referenceCoord",
+                                                              startCoord.latitude.description,
+                                                              startCoord.longitude.description])
         
         let enu1SecondLater = geodeticToEnu(lat: moveCoord.latitude,
                                             lon: moveCoord.longitude,
@@ -90,7 +90,7 @@ class CoordinateMapper {
         rotationMatrix = T
     }
     
-    func calcObjectPosition(objGeographicData: GeographicCoordinate) -> SIMD3<Double>? {
+    func calcObjectPosition(objGeographicData: LocationData) -> CoordinateData? {
         guard let AVP_geoGraphicRefCoord = AVP_geoGraphicRefCoord, let T = rotationMatrix else { return nil }
         
         let enuObject = geodeticToEnu(
@@ -101,8 +101,9 @@ class CoordinateMapper {
         let enuObjectVector = simd_double3(enuObject.east, enuObject.north, enuObject.up)
         
         let objectPositionInVisionProCoordinates = T * enuObjectVector // simd에서 행렬 * 벡터 연산
-        print("object_position_in_visionpro_coordinates (x, y, z): \(objectPositionInVisionProCoordinates)")
-        return objectPositionInVisionProCoordinates
+        return CoordinateData(x: objectPositionInVisionProCoordinates.x,
+                              y: objectPositionInVisionProCoordinates.y,
+                              z: objectPositionInVisionProCoordinates.z)
     }
     
     func calculateAverageOfCoordinates<C: Collection>(in collection: C) -> GeographicCoordinate? where C.Element == GeographicCoordinate {

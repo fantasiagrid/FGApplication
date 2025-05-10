@@ -6,21 +6,38 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 @main
 struct FGApp: App {
     @State private var appModel = AppModel()
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openImmersiveSpace) var openImmersiveSpace
+    @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
+    
     let fileManager = DummyFileManager.shared
+    var contentEnv: ContentEnvironment
+    
+    let coordinateMapper: CoordinateMapper = CoordinateMapper.shared
+    
+    private let locationDataManager = LocationManager.shared
+    
+    init() {
+        contentEnv = ContentEnvironment()
+        contentEnv.setImmersivewController(appModel: appModel, open: openImmersiveSpace, dismiss: dismissImmersiveSpace)
+        locationDataManager.notificables.append(self)
+        changeStatus(status: locationDataManager.locationManager.authorizationStatus,
+                     accuracy: locationDataManager.locationManager.accuracyAuthorization)
+    }
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(contentEnv: contentEnv)
                 .environment(appModel)
         }
         
-        ImmersiveSpace(id: appModel.immersiveSpaceID) {
-            ImmersiveView()
+        ImmersiveSpace(id: ImmersiveSpaceID.main.rawValue) {
+            ImmersiveView(contentEnv: contentEnv)
                 .environment(appModel)
                 .onAppear {
                     appModel.immersiveSpaceState = .open
@@ -30,33 +47,24 @@ struct FGApp: App {
                 }
         }
         .immersionStyle(selection: .constant(.mixed), in: .mixed)
-        .onChange(of: scenePhase) {
-            switch scenePhase {
-            case .active:
-                Logger.shared.log(message: "App is active")
-            case .inactive:
-                Logger.shared.log(message: "App is inactive")
-                stopSensors()
-            case .background:
-                Logger.shared.log(message: "App moved to background")
-                stopSensors()
-                
-            @unknown default:
-                break
-            }
-        }
      }
-    
-    func stopSensors() {
-        if LocationManager.shared.isMonitoringLocation {
-            LocationManager.shared.stopUpdatingLocation()
-        }
-        if MotionManager.shared.isMonitoringAcceleration {
-            MotionManager.shared.stopUpdatingAcceleration()
-        }
-        if MotionManager.shared.isMonitoringGyroscope {
-            MotionManager.shared.stopUpdatingGyroscope()
-        }
-    }
 }
 
+extension FGApp: NotifableLocation {
+    func changeStatus(status: CLAuthorizationStatus, accuracy: CLAccuracyAuthorization) {
+        if status == .notDetermined {
+            locationDataManager.requestWhenInUsePermissions() // Flow 1
+         }
+    }
+    
+    func receiveLocation(data: CLLocation) {
+        contentEnv.downloadContents(location: LocationData(latitude: data.coordinate.latitude, longitude: data.coordinate.longitude, altitude: 0))
+        
+        coordinateMapper.receiveGeographicData(GeographicCoordinate(date: Date(),
+                                                                    latitude: data.coordinate.latitude,
+                                                                    longitude: data.coordinate.longitude,
+                                                                    altitude: 0))
+        
+        Logger.shared.log(message: "receive location: \(data.coordinate.latitude), \(data.coordinate.longitude)")
+    }
+}

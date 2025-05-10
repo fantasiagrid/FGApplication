@@ -57,7 +57,7 @@ extension MotionManager {
             return
         }
         self.isMonitoringAcceleration = true
-        DummyFileManager.shared.accelerationFileManager.startMonitoring()
+        DummyFileManager.shared.acceleration.startMonitoring(date: Date())
         
         motionManager.accelerometerUpdateInterval = TimeInterval(1 / frequency)
         motionManager.startAccelerometerUpdates(to: OperationQueue.current!) { data, error in
@@ -70,14 +70,18 @@ extension MotionManager {
                 noti.receiveAccelerationData(data: data)
             }
             
-            DummyFileManager.shared.accelerationFileManager.recordMotionData(x: data.acceleration.x, y: data.acceleration.y, z: data.acceleration.z)
+            DummyFileManager.shared.acceleration.append(date: Date(),
+                                                                   values: ["receive",
+                                                                            data.acceleration.x.description,
+                                                                            data.acceleration.y.description,
+                                                                            data.acceleration.z.description])
         }
     }
     
     func stopUpdatingAcceleration() {
         self.isMonitoringAcceleration = false
         self.motionManager.stopAccelerometerUpdates()
-        DummyFileManager.shared.accelerationFileManager.stopMonitoring()
+        DummyFileManager.shared.acceleration.stopMonitoring(date: Date())
     }
 }
 
@@ -100,7 +104,7 @@ extension MotionManager {
     }
     
     func startUpdatingGroscope(frequency: Int = GroscopeFrequency.maximum.rawValue) {
-        DummyFileManager.shared.groscopeFileManager.startMonitoring()
+        DummyFileManager.shared.gyroscope.startMonitoring(date: Date())
         
         self.isMonitoringGyroscope = true
         motionManager.gyroUpdateInterval = TimeInterval(1 / frequency)
@@ -114,13 +118,17 @@ extension MotionManager {
                 noti.receiveGyroscopeData(data: data)
             }
             
-            DummyFileManager.shared.groscopeFileManager.recordMotionData(x: data.rotationRate.x, y: data.rotationRate.y, z: data.rotationRate.z)
+            DummyFileManager.shared.gyroscope.append(date: Date(),
+                                                                   values: ["receive",
+                                                                            data.rotationRate.x.description,
+                                                                            data.rotationRate.y.description,
+                                                                            data.rotationRate.z.description])
         }
     }
     
     func stopUpdatingGyroscope() {
         self.isMonitoringGyroscope = false
         self.motionManager.stopGyroUpdates()
-        DummyFileManager.shared.groscopeFileManager.stopMonitoring()
+        DummyFileManager.shared.gyroscope.stopMonitoring(date: Date())
     }
 }
