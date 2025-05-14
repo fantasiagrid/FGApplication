@@ -62,7 +62,7 @@ enum TestPoseCoordinates {
             ]
         case .entityLoad:
             return generateNearbyEntities(center: CLLocationCoordinate2D(latitude: self.moveCoord.latitude, longitude: self.moveCoord.longitude),
-                                          count: 100)
+                                          count: 50)
         }
     }
 }
@@ -87,9 +87,10 @@ func generateNearbyEntities(center: CLLocationCoordinate2D,
         let newLon = center.longitude + deltaLon
 
         let locationData = LocationData(latitude: newLat, longitude: newLon, altitude: 0)
-        let url = getSavingDirectory().appendingPathComponent("received_model_buffered.usdz")
-
-        let entity = LocationEntity(location: locationData, url: url)
+        // let url = getSavingDirectory().appendingPathComponent("received_model_buffered.usdz")
+        let url = Bundle.main.url(forResource: "blue_cat2", withExtension: "usdz")
+        
+        let entity = LocationEntity(location: locationData, url: url!)
         entities.append(entity)
     }
 

@@ -111,12 +111,13 @@ extension LocationManager {
         DummyFileManager.shared.location.startMonitoring(date: Date())
         
         if BuildScheme.type == .test {
-            let halfLoadingTime = CoordinateMapper.shared.loadingInterval / 2
-            let locInterval = CoordinateMapper.shared.loadingInterval / 10
+            let loadingInterval = CoordinateSetting.loadingInterval.rawValue
+            let halfLoadingTime = loadingInterval / 2
+            let locInterval = loadingInterval / 10
             
             // 지금부터 1초에 한번씩 위치정보를 보냄
             for time in stride(from: 0,
-                            to: CoordinateMapper.shared.loadingInterval,
+                            to: loadingInterval,
                             by: locInterval) {
                 let testLocation: CLLocation
                 if time < halfLoadingTime {

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import RealityKit
+import CoreMotion
 
 struct ImmersiveView: View {
     let contentEnv: ContentEnvironment
@@ -17,6 +18,7 @@ struct ImmersiveView: View {
     
     var body: some View {
         RealityView { content in
+            DummyFileManager.shared.performance.append(date: Date(), values: ["Start entity rendering", ""])
             for coordEntity in self.contentEnv.coordiateEntiteis {
                 let x = coordEntity.coord.x
                 let y = coordEntity.coord.y
@@ -26,6 +28,7 @@ struct ImmersiveView: View {
                 
                 content.add(coordEntity.entity)
             }
+            DummyFileManager.shared.performance.append(date: Date(), values: ["End entity rendering", ""])
         }
     }
 }

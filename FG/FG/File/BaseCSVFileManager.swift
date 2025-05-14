@@ -54,7 +54,7 @@ class BaseCSVFileManager {
         Logger.shared.log(message: "\(fileName), stop monitoring")
         
         flush()
-    }    
+    }
 }
 
 // MARK: File handling

@@ -14,6 +14,7 @@ class DummyFileManager {
     let acceleration: BaseCSVFileManager
     let gyroscope: BaseCSVFileManager
     let fps: BaseCSVFileManager
+    let performance: BaseCSVFileManager
     
     private init() {
         location = BaseCSVFileManager(fileName: "location",
@@ -39,5 +40,9 @@ class DummyFileManager {
         fps = BaseCSVFileManager(fileName: "fps",
                                  bufferSize: 1,
                                  headerFields: ["Time", "EventType", "FPS"])
+        
+        performance = BaseCSVFileManager(fileName: "rendering_performance",
+                                         bufferSize: 1,
+                                         headerFields: ["Time", "EventType", "Description"])
     }
 }

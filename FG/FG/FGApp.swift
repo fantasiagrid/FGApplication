@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreLocation
+import AudioToolbox
 
 @main
 struct FGApp: App {
@@ -18,14 +19,16 @@ struct FGApp: App {
     let fileManager = DummyFileManager.shared
     var contentEnv: ContentEnvironment
     
-    let coordinateMapper: CoordinateMapper = CoordinateMapper.shared
+    let coordinateMapper: CoordinateMapper = CoordinateMapper()
     
     private let locationDataManager = LocationManager.shared
+    private let poseProvider = DevicePoseProvider()
     
     init() {
-        contentEnv = ContentEnvironment()
+        contentEnv = ContentEnvironment(coordinateMapper: coordinateMapper)
         contentEnv.setImmersivewController(appModel: appModel, open: openImmersiveSpace, dismiss: dismissImmersiveSpace)
         locationDataManager.notificables.append(self)
+        poseProvider.notificables.append(self)
         changeStatus(status: locationDataManager.locationManager.authorizationStatus,
                      accuracy: locationDataManager.locationManager.accuracyAuthorization)
     }
@@ -41,6 +44,9 @@ struct FGApp: App {
                 .environment(appModel)
                 .onAppear {
                     appModel.immersiveSpaceState = .open
+                    
+                    poseProvider.runSession()
+                    poseProvider.startTracking()
                 }
                 .onDisappear {
                     appModel.immersiveSpaceState = .closed
@@ -66,5 +72,20 @@ extension FGApp: NotifableLocation {
                                                                     altitude: 0))
         
         Logger.shared.log(message: "receive location: \(data.coordinate.latitude), \(data.coordinate.longitude)")
+    }
+}
+
+extension FGApp: NotifablePose {
+    func receiveRotation(data: Rotation) {
+        if data.yaw > 0 && data.yaw > 90 {
+            AudioServicesPlaySystemSound(1057)
+            DummyFileManager.shared.performance.append(date: Date(),
+                                                       values: ["Left(90)", ""])
+        }
+        if data.yaw < 0 && data.yaw < -90 {
+            DummyFileManager.shared.performance.append(date: Date(),
+                                                       values: ["Right(90)", ""])
+            AudioServicesPlaySystemSound(1057)
+        }
     }
 }

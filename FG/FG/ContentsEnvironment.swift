@@ -7,12 +7,13 @@
 
 import SwiftUI
 import RealityFoundation
+import ModelIO
 
 class ContentEnvironment {
     var downloadedLocation: LocationData = LocationData(latitude: 0, longitude: 0, altitude: 0)
     
     let client = WebSocketClientBuffer()
-    let coordinateMapper = CoordinateMapper.shared
+    let coordinateMapper: CoordinateMapper
     
     var locationEntities: [LocationEntity] = []
     var coordiateEntiteis: [CoordinateEntity] = []
@@ -20,31 +21,73 @@ class ContentEnvironment {
     private var appModel: AppModel?
     private var openImmersiveSpace: OpenImmersiveSpaceAction?
     private var dismissImmersiveSpace: DismissImmersiveSpaceAction?
+    
+    init(coordinateMapper: CoordinateMapper) {
+        self.coordinateMapper = coordinateMapper
+    }
+    
+    private var totalVertexCount: Int {
+        var nVert = 0
+        for coordEntity in self.coordiateEntiteis {
+            if let modelEntity = findModelEntity(in: coordEntity.entity) {
+                nVert += uniqueVertexCount(from: modelEntity)
+            }
+        }
+        return nVert
+    }
 }
 
 // MARK: Space transition
 extension ContentEnvironment {
     func updateSpace() async {
+        // Dismiss previous immersive space
         guard let appModel = appModel, let open = openImmersiveSpace, let dismiss = dismissImmersiveSpace else { return }
         if await appModel.immersiveSpaceState == .open {
             await dismiss()
         }
-        coordinateMapper.initRotationMatrix()
         
-        let startTime = Date()
-        var coordEntities: [CoordinateEntity] = []
+        // Calcultae coordinate based on immersive coordinate space & Geographic location
+        coordinateMapper.initRotationMatrix()
+        var coordinates: [CoordinateData?] = []
         for locEntity in locationEntities {
             let obj_pos = coordinateMapper.calcObjectPosition(objGeographicData: locEntity.location)
-            guard let obj_pos = obj_pos else { continue }
-            guard let entity = try? await loadEntity(from: locEntity.url) else { return }
-            coordEntities.append(CoordinateEntity(coord: obj_pos, entity: entity))
+            coordinates.append(obj_pos)
         }
+        
+        // Load entities
+        var totalFileSize: Int64 = 0
+        let loadEntityStartTime = Date()
+        DummyFileManager.shared.performance.append(date: loadEntityStartTime, values: ["Start entity loading", ""])
+        var coordEntities: [CoordinateEntity] = []
+        for (locEntity, coord) in zip(locationEntities, coordinates) {
+            guard let coord = coord else { continue }
+            guard let entity = try? await loadEntity(from: locEntity.url) else { continue }
+            guard let size = getLocalFileSize(from: locEntity.url) else { continue }
+            
+            coordEntities.append(CoordinateEntity(coord: coord, entity: entity))
+            
+            totalFileSize += size
+        }
+        
         self.coordiateEntiteis = coordEntities
+        let loadEntityEndTime = Date()
         
-        let endTime = Date()
-        let duration = endTime.timeIntervalSince(startTime)
-        print("ImmersiveView 로딩 시간: \(duration)초")
+        let convertedFileSize = convertFileSizeUnit(byte: totalFileSize, unit: "MB")
+        DummyFileManager.shared.performance.append(date: loadEntityEndTime,
+                                                   values: ["End entity loading", "fileSize: \(convertedFileSize)MB - #obj: \(coordEntities.count)"])
+        Logger.shared.log(message: "Entity 로딩 시간: \(loadEntityEndTime.timeIntervalSince(loadEntityStartTime))초")
         
+        // Rendering할 Vertex의 수
+        if BuildScheme.type == .test {
+            let startVertCalcTime = Date()
+            DummyFileManager.shared.performance.append(date: startVertCalcTime, values: ["Start calc vertex", ""])
+            let nVert = self.totalVertexCount
+            let endVertCalcTime = Date()
+            DummyFileManager.shared.performance.append(date: endVertCalcTime, values: ["End calc vertex", "total vertex: \(nVert)"])
+            Logger.shared.log(message: "로딩 시간: \(endVertCalcTime.timeIntervalSince(startVertCalcTime))초, 총 Vertex 수: \(nVert)")
+        }
+        
+        // Open immersivew view
         await open(id: ImmersiveSpaceID.main.rawValue)
     }
     
@@ -73,10 +116,27 @@ extension ContentEnvironment {
     }
 }
 
-// MARK: Entity
 extension ContentEnvironment {
-    func loadEntity(from url: URL) async throws -> Entity {
-        let entity = try await Entity(contentsOf: url)
-        return entity
+    func getLocalFileSize(from url: URL) -> Int64? {
+        do {
+            let attr = try FileManager.default.attributesOfItem(atPath: url.path)
+            return attr[.size] as? Int64
+        } catch {
+            print("파일 크기 가져오기 실패: \(error)")
+            return nil
+        }
+    }
+    
+    func convertFileSizeUnit(byte: Int64, unit: String = "MB") -> Int64 {
+        if unit == "KB" {
+            return byte / 1024
+        }
+        else if unit == "MB" {
+            return byte / (1024 * 1024)
+        } else if unit == "GB" {
+            return byte / (1024 * 1024 * 1024)
+        } else {
+            return 0
+        }
     }
 }

@@ -15,9 +15,11 @@ struct GeographicCoordinate {
     let altitude: Double
 }
 
+enum CoordinateSetting: TimeInterval {
+    case loadingInterval = 1
+}
+
 class CoordinateMapper {
-    static let shared = CoordinateMapper()
-    
     var AVP_geoGrapicCoords: [GeographicCoordinate] = []
     var AVP_geoGraphicRefCoord: GeographicCoordinate?
     
@@ -28,7 +30,7 @@ class CoordinateMapper {
     }
     
     var loadingInterval: TimeInterval {
-        return 1
+        return CoordinateSetting.loadingInterval.rawValue
     }
     
     private func estimatePose() -> Double? {

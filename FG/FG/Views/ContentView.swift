@@ -30,7 +30,7 @@ struct ContentView: View {
                     
                     LocationManager.shared.startUpdatingLocation()
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(CoordinateMapper.shared.loadingInterval + 1)) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(CoordinateSetting.loadingInterval.rawValue + 1)) {
                         Task {
                             await contentEnv.updateSpace()
                         }
@@ -38,8 +38,6 @@ struct ContentView: View {
                 }) {
                     Text("Start")
                 }
-                
-                Text("\(fpsCounter.fps)")
             }
         }
         .onAppear() {}
