@@ -51,6 +51,8 @@ extension ContentEnvironment {
         var coordinates: [CoordinateData?] = []
         for locEntity in locationEntities {
             let obj_pos = coordinateMapper.calcObjectPosition(objGeographicData: locEntity.location)
+            
+            // 만약 특정한 test type이면, object를 일렬로 줄세움
             coordinates.append(obj_pos)
         }
         
@@ -58,13 +60,19 @@ extension ContentEnvironment {
         var totalFileSize: Int64 = 0
         let loadEntityStartTime = Date()
         DummyFileManager.shared.performance.append(date: loadEntityStartTime, values: ["Start entity loading", ""])
+        
         var coordEntities: [CoordinateEntity] = []
-        for (locEntity, coord) in zip(locationEntities, coordinates) {
-            guard let coord = coord else { continue }
-            guard let entity = try? await loadEntity(from: locEntity.url) else { continue }
-            guard let size = getLocalFileSize(from: locEntity.url) else { continue }
+        for i in 0...coordinates.count - 1 {
+            guard let coord = coordinates[i] else { continue }
+            guard let entity = try? await loadEntity(from: locationEntities[i].url) else { continue }
+            guard let size = getLocalFileSize(from: locationEntities[i].url) else { continue }
             
-            coordEntities.append(CoordinateEntity(coord: coord, entity: entity))
+            if BuildScheme.testPoseCoordinates == .entityLoad {
+                coordEntities.append(CoordinateEntity(coord: coord, entity: entity))
+            } else {
+                let xs = centeredArray(length: locationEntities.count, spacing: 1)
+                coordEntities.append(CoordinateEntity(coord: CoordinateData(x: xs[i], y: 1, z: -2), entity: entity))
+            }
             
             totalFileSize += size
         }
@@ -75,7 +83,7 @@ extension ContentEnvironment {
         let convertedFileSize = convertFileSizeUnit(byte: totalFileSize, unit: "MB")
         DummyFileManager.shared.performance.append(date: loadEntityEndTime,
                                                    values: ["End entity loading", "fileSize: \(convertedFileSize)MB - #obj: \(coordEntities.count)"])
-        Logger.shared.log(message: "Entity 로딩 시간: \(loadEntityEndTime.timeIntervalSince(loadEntityStartTime))초")
+        Logger.shared.log(message: "Entity Loading duration: \(loadEntityEndTime.timeIntervalSince(loadEntityStartTime))초, fileSize: \(convertedFileSize)MB, #obj: \(coordEntities.count)")
         
         // Rendering할 Vertex의 수
         if BuildScheme.type == .test {
@@ -84,7 +92,7 @@ extension ContentEnvironment {
             let nVert = self.totalVertexCount
             let endVertCalcTime = Date()
             DummyFileManager.shared.performance.append(date: endVertCalcTime, values: ["End calc vertex", "total vertex: \(nVert)"])
-            Logger.shared.log(message: "로딩 시간: \(endVertCalcTime.timeIntervalSince(startVertCalcTime))초, 총 Vertex 수: \(nVert)")
+            Logger.shared.log(message: "Total vertex count: \(nVert)")
         }
         
         // Open immersivew view

@@ -32,7 +32,7 @@ struct LocationData {
 }
 
 struct CoordinateData {
-    let x: Double
-    let y: Double
-    let z: Double
+    let x: Float
+    let y: Float
+    let z: Float
 }

@@ -103,9 +103,9 @@ class CoordinateMapper {
         let enuObjectVector = simd_double3(enuObject.east, enuObject.north, enuObject.up)
         
         let objectPositionInVisionProCoordinates = T * enuObjectVector // simd에서 행렬 * 벡터 연산
-        return CoordinateData(x: objectPositionInVisionProCoordinates.x,
-                              y: objectPositionInVisionProCoordinates.y,
-                              z: objectPositionInVisionProCoordinates.z)
+        return CoordinateData(x: Float(objectPositionInVisionProCoordinates.x),
+                              y: Float(objectPositionInVisionProCoordinates.y),
+                              z: Float(objectPositionInVisionProCoordinates.z))
     }
     
     func calculateAverageOfCoordinates<C: Collection>(in collection: C) -> GeographicCoordinate? where C.Element == GeographicCoordinate {

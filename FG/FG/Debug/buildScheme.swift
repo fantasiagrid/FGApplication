@@ -10,7 +10,7 @@ import CoreLocation
 
 struct BuildScheme {
     static let type: BuildSchemeType = BuildSchemeType.test
-    static let testPoseCoordinates: TestPoseCoordinates = .entityLoad
+    static let testPoseCoordinates: TestPoseCoordinates = .entitySequencing
 }
 
 enum BuildSchemeType {
@@ -23,6 +23,7 @@ enum TestPoseCoordinates {
     case twosome_side
     case twosome_front
     case entityLoad
+    case entitySequencing
     
     var startCoord: GeographicCoordinate {
         switch self {
@@ -61,16 +62,32 @@ enum TestPoseCoordinates {
                                url: getSavingDirectory().appendingPathComponent("received_model_buffered.usdz"))
             ]
         case .entityLoad:
-            return generateNearbyEntities(center: CLLocationCoordinate2D(latitude: self.moveCoord.latitude, longitude: self.moveCoord.longitude),
-                                          count: 50)
+            return generateNearbyEntities(obj_name: "000001_3d",
+                                          center: CLLocationCoordinate2D(latitude: self.moveCoord.latitude,
+                                                                         longitude: self.moveCoord.longitude),
+                                          radiusInMeters: 10,
+                                          count: 2)
+        case .entitySequencing:
+            let objNames: [String] = ["000001_3d", "000001_3d", "000001_3d"]
+            
+            var entities: [LocationEntity] = []
+            for objName in objNames {
+                let locationData = LocationData(latitude: 0, longitude: 0, altitude: 0)
+                
+                let url: URL = Bundle.main.url(forResource: objName, withExtension: "usdz")!
+                let entity = LocationEntity(location: locationData, url: url)
+                entities.append(entity)
+            }
+            return entities
         }
     }
 }
 
-func generateNearbyEntities(center: CLLocationCoordinate2D,
-                            count: Int) -> [LocationEntity] {
+func generateNearbyEntities(obj_name: String,
+                            center: CLLocationCoordinate2D,
+                            radiusInMeters: Double = 10.0,
+                            count: Int = 10) -> [LocationEntity] {
     var entities: [LocationEntity] = []
-    let radiusInMeters: Double = 10.0
 
     for _ in 0..<count {
         // 임의의 각도 (0~360도)
@@ -85,12 +102,11 @@ func generateNearbyEntities(center: CLLocationCoordinate2D,
 
         let newLat = center.latitude + deltaLat
         let newLon = center.longitude + deltaLon
-
         let locationData = LocationData(latitude: newLat, longitude: newLon, altitude: 0)
-        // let url = getSavingDirectory().appendingPathComponent("received_model_buffered.usdz")
-        let url = Bundle.main.url(forResource: "blue_cat2", withExtension: "usdz")
         
-        let entity = LocationEntity(location: locationData, url: url!)
+        // LocationEntity 생성
+        let url: URL = Bundle.main.url(forResource: obj_name, withExtension: "usdz")!
+        let entity = LocationEntity(location: locationData, url: url)
         entities.append(entity)
     }
 

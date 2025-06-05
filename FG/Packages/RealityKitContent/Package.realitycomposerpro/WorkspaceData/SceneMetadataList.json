@@ -35,12 +35,24 @@
       }
     ]
   },
+  "9CC75F80-7CEA-465B-9A1D-71E8F5969105" : {
+    "objectMetadataList" : [
+      [
+        "9CC75F80-7CEA-465B-9A1D-71E8F5969105",
+        "Root"
+      ],
+      {
+        "isExpanded" : true,
+        "isLocked" : false
+      }
+    ]
+  },
   "AF09ED6F-1707-48FD-8720-65B998362C09" : {
     "objectMetadataList" : [
       [
         "AF09ED6F-1707-48FD-8720-65B998362C09",
         "Root",
-        "Sphere_Right"
+        "Sphere_Left"
       ],
       {
         "isExpanded" : true,
@@ -49,7 +61,7 @@
       [
         "AF09ED6F-1707-48FD-8720-65B998362C09",
         "Root",
-        "Sphere_Left"
+        "Sphere_Right"
       ],
       {
         "isExpanded" : true,
