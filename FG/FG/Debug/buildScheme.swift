@@ -54,12 +54,16 @@ enum TestPoseCoordinates {
         case .twosome_side:
             return [
                 LocationEntity(location: LocationData(latitude: 37.565898, longitude: 127.055460, altitude: 0),
-                               url: getSavingDirectory().appendingPathComponent("received_model_buffered.usdz")),
+                               resource: getSavingDirectory().appendingPathComponent("received_model_buffered.usdz"),
+                               name: "received_model_buffered",
+                               youtubeLink: "https://www.youtube.com/watch?v=_zj7qO1qqAA"),
             ]
         case .twosome_front:
             return [
                 LocationEntity(location: LocationData(latitude: 37.565898, longitude: 127.055460, altitude: 0),
-                               url: getSavingDirectory().appendingPathComponent("received_model_buffered.usdz"))
+                               resource: getSavingDirectory().appendingPathComponent("received_model_buffered.usdz"),
+                               name: "received_model_buffered",
+                               youtubeLink: "https://www.youtube.com/watch?v=_zj7qO1qqAA")
             ]
         case .entityLoad:
             return generateNearbyEntities(obj_name: "000001_3d",
@@ -75,7 +79,10 @@ enum TestPoseCoordinates {
                 let locationData = LocationData(latitude: 0, longitude: 0, altitude: 0)
                 
                 let url: URL = Bundle.main.url(forResource: objName, withExtension: "usdz")!
-                let entity = LocationEntity(location: locationData, url: url)
+                let entity = LocationEntity(location: locationData,
+                                            resource: url,
+                                            name: objName,
+                                            youtubeLink: "https://www.youtube.com/watch?v=_zj7qO1qqAA")
                 entities.append(entity)
             }
             return entities
@@ -106,7 +113,10 @@ func generateNearbyEntities(obj_name: String,
         
         // LocationEntity 생성
         let url: URL = Bundle.main.url(forResource: obj_name, withExtension: "usdz")!
-        let entity = LocationEntity(location: locationData, url: url)
+        let entity = LocationEntity(location: locationData,
+                                    resource: url,
+                                    name: "ABC",
+                                    youtubeLink: "https://www.youtube.com/watch?v=_zj7qO1qqAA")
         entities.append(entity)
     }
 

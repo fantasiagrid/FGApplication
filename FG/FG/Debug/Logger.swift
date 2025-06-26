@@ -11,6 +11,7 @@ enum LogType {
     case info
     case warning
     case error
+    case communication
     
     func logMessage() -> String {
         switch self {
@@ -20,6 +21,8 @@ enum LogType {
             return "WARNING"
         case .error:
             return "ERROR"
+        case .communication:
+            return "COMMUNICATION"
         }
     }
 }

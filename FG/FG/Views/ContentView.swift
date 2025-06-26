@@ -14,6 +14,7 @@ struct ContentView: View {
     private let contentEnv: ContentEnvironment
     
     @State private var fpsCounter = FPSCounter()
+    @State private var showWebView = false
     
     init(contentEnv: ContentEnvironment) {
         self.contentEnv = contentEnv

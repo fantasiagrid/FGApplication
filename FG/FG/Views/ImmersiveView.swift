@@ -13,6 +13,8 @@ import simd
 struct ImmersiveView: View {
     let contentEnv: ContentEnvironment
     
+    @Environment(\.openWindow) private var openWindow
+    
     init(contentEnv: ContentEnvironment) {
         self.contentEnv = contentEnv
     }
@@ -25,63 +27,40 @@ struct ImmersiveView: View {
         RealityView { content in
             DummyFileManager.shared.performance.append(date: Date(), values: ["Start entity rendering", ""])
             
-            var i = 0
+            // let vrEnvironment = createPanoramicEnvironment(imageName: "360_planet")
+            // content.add(vrEnvironment)
+            
             for coordEntity in self.contentEnv.coordiateEntiteis {
                 let x = coordEntity.coord.x
                 let y = coordEntity.coord.y
                 let z = coordEntity.coord.z
                 
                 let entity = coordEntity.entity
+                entity.addTappable()
                 entity.position = [Float(x), Float(y), Float(z)]
                 entity.transform.scale = [0.5, 0.5, 0.5]
                 entity.transform.rotation = finalRotation
                 
-                // Lightening
-                if i == 0 {
-                    let lightEntity = ModelEntity(mesh: .generateSphere(radius: 0.1))
-                    lightEntity.position = [Float(x), 1, -1]
-                    
-                    let material = SimpleMaterial(color: .red, isMetallic: false)
-                    lightEntity.model?.materials = [material]
-                    
-                    lightEntity.components.set(SpotLightComponent(color: .red,
-                                                                  intensity: 10_000,
-                                                                  innerAngleInDegrees: 0,
-                                                                  outerAngleInDegrees: 45,
-                                                                  attenuationRadius: 6,
-                                                                  ))
-                    content.add(lightEntity)
-                } else if i == 1 {
-                    let lightEntity = ModelEntity(mesh: .generateSphere(radius: 0.1))
-                    lightEntity.position = [Float(x), 1, -1]
-                    
-                    let material = SimpleMaterial(color: .blue, isMetallic: false)
-                    lightEntity.model?.materials = [material]
-                    
-                    lightEntity.components.set(PointLightComponent(color: .blue,
-                                                                   intensity: 10_000,
-                                                                   attenuationRadius: 6))
-                    content.add(lightEntity)
-                    
-                } else {
-                    let lightEntity = ModelEntity(mesh: .generateSphere(radius: 0.1))
-                    lightEntity.position = [Float(x), 1, -1]
-                    
-                    let material = SimpleMaterial(color: .white, isMetallic: false)
-                    lightEntity.model?.materials = [material]
-                    
-                    lightEntity.components.set(DirectionalLightComponent(color: .white, intensity: 10_000))
-                    content.add(lightEntity)
-                }
-                
                 entity.applyFloatingAnimation(extra_y: 0.05, duration: 2)
+                entity.components.set(TagComponent(tag: coordEntity.name))
                 
                 content.add(entity)
-                
-                i += 1
             }
             
             DummyFileManager.shared.performance.append(date: Date(), values: ["End entity rendering", ""])
-        }
+        }.gesture(SpatialTapGesture().targetedToAnyEntity().onEnded({ value in
+            var tappedEntity: Entity? = value.entity
+            
+            while let entity = tappedEntity {
+                if let tag = entity.components[TagComponent.self] {
+                    print("✅ Tapped entity with tag: \(tag.tag)")
+                    self.openWindow(id: WindowID.web.rawValue, value: tag.tag)
+                    return
+                }
+                tappedEntity = entity.parent
+            }
+
+            print("❌ Tag not found")
+        }))
     }
 }

@@ -18,6 +18,10 @@ class AppModel {
     var immersiveSpaceState = ImmersiveSpaceState.closed
 }
 
+enum WindowID: String {
+    case web = "Web"
+}
+
 enum ImmersiveSpaceID: String {
     case main = "ImmersiveSpace"
 }

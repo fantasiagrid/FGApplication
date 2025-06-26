@@ -10,10 +10,14 @@ import RealityFoundation
 
 struct LocationEntity {
     let location: LocationData
-    let url: URL
+    let resource: URL
+    let name: String
+    let youtubeLink: String
 }
 
 struct CoordinateEntity {
     let coord: CoordinateData
     let entity: Entity
+    let name: String
+    let youtubeLink: String
 }

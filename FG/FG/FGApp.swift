@@ -27,6 +27,8 @@ struct FGApp: App {
     init() {
         contentEnv = ContentEnvironment(coordinateMapper: coordinateMapper)
         contentEnv.setImmersivewController(appModel: appModel, open: openImmersiveSpace, dismiss: dismissImmersiveSpace)
+        contentEnv.downloadInitialContents()
+        
         locationDataManager.notificables.append(self)
         poseProvider.notificables.append(self)
         changeStatus(status: locationDataManager.locationManager.authorizationStatus,
@@ -37,6 +39,10 @@ struct FGApp: App {
         WindowGroup {
             ContentView(contentEnv: contentEnv)
                 .environment(appModel)
+        }.windowStyle(.plain)
+        
+        WindowGroup(id: WindowID.web.rawValue, for: String.self) { value in
+            WebContentView()
         }
         
         ImmersiveSpace(id: ImmersiveSpaceID.main.rawValue) {
@@ -64,7 +70,7 @@ extension FGApp: NotifableLocation {
     }
     
     func receiveLocation(data: CLLocation) {
-        contentEnv.downloadContents(location: LocationData(latitude: data.coordinate.latitude, longitude: data.coordinate.longitude, altitude: 0))
+        contentEnv.updateContents(location: LocationData(latitude: data.coordinate.latitude, longitude: data.coordinate.longitude, altitude: 0))
         
         coordinateMapper.receiveGeographicData(GeographicCoordinate(date: Date(),
                                                                     latitude: data.coordinate.latitude,

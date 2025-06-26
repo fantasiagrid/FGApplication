@@ -51,8 +51,6 @@ extension ContentEnvironment {
         var coordinates: [CoordinateData?] = []
         for locEntity in locationEntities {
             let obj_pos = coordinateMapper.calcObjectPosition(objGeographicData: locEntity.location)
-            
-            // 만약 특정한 test type이면, object를 일렬로 줄세움
             coordinates.append(obj_pos)
         }
         
@@ -64,14 +62,15 @@ extension ContentEnvironment {
         var coordEntities: [CoordinateEntity] = []
         for i in 0...coordinates.count - 1 {
             guard let coord = coordinates[i] else { continue }
-            guard let entity = try? await loadEntity(from: locationEntities[i].url) else { continue }
-            guard let size = getLocalFileSize(from: locationEntities[i].url) else { continue }
+            guard let entity = try? await loadEntity(from: locationEntities[i].resource) else { continue }
+            guard let size = getLocalFileSize(from: locationEntities[i].resource) else { continue }
             
+            let name = locationEntities[i].name
             if BuildScheme.testPoseCoordinates == .entityLoad {
-                coordEntities.append(CoordinateEntity(coord: coord, entity: entity))
+                coordEntities.append(CoordinateEntity(coord: coord, entity: entity, name: name, youtubeLink: locationEntities[i].youtubeLink))
             } else {
                 let xs = centeredArray(length: locationEntities.count, spacing: 1)
-                coordEntities.append(CoordinateEntity(coord: CoordinateData(x: xs[i], y: 1, z: -2), entity: entity))
+                coordEntities.append(CoordinateEntity(coord: CoordinateData(x: xs[i], y: 1, z: -2), entity: entity, name: name, youtubeLink: locationEntities[i].youtubeLink))
             }
             
             totalFileSize += size
@@ -85,7 +84,7 @@ extension ContentEnvironment {
                                                    values: ["End entity loading", "fileSize: \(convertedFileSize)MB - #obj: \(coordEntities.count)"])
         Logger.shared.log(message: "Entity Loading duration: \(loadEntityEndTime.timeIntervalSince(loadEntityStartTime))초, fileSize: \(convertedFileSize)MB, #obj: \(coordEntities.count)")
         
-        // Rendering할 Vertex의 수
+        // Log: Rendering할 Vertex의 수
         if BuildScheme.type == .test {
             let startVertCalcTime = Date()
             DummyFileManager.shared.performance.append(date: startVertCalcTime, values: ["Start calc vertex", ""])
@@ -108,12 +107,10 @@ extension ContentEnvironment {
 
 // MARK: Contents
 extension ContentEnvironment {
-    func downloadContents(location: LocationData) {
-        downloadedLocation = location
+    func downloadInitialContents() {
+        client.connect()
+        // client.send(message: "")
         
-        // 특정 location에 해당하는 entity들을 다운로드함
-        
-        // client.connect()
         if BuildScheme.type == .normal {
             locationEntities = []
         } else if BuildScheme.type == .test {
@@ -121,6 +118,10 @@ extension ContentEnvironment {
         } else {
             locationEntities = []
         }
+    }
+    
+    func updateContents(location: LocationData) {
+        downloadedLocation = location
     }
 }
 
