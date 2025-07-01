@@ -26,8 +26,6 @@ struct FGApp: App {
     
     init() {
         contentEnv = ContentEnvironment(coordinateMapper: coordinateMapper)
-        contentEnv.setImmersivewController(appModel: appModel, open: openImmersiveSpace, dismiss: dismissImmersiveSpace)
-        contentEnv.downloadInitialContents()
         
         locationDataManager.notificables.append(self)
         poseProvider.notificables.append(self)
@@ -38,11 +36,19 @@ struct FGApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(contentEnv: contentEnv)
-                .environment(appModel)
+                .environment(appModel).onAppear {
+                    contentEnv.setImmersivewController(appModel: appModel, open: openImmersiveSpace, dismiss: dismissImmersiveSpace)
+                    SpaceController.shared.setParameters(appModel: appModel, open: openImmersiveSpace, dismiss: dismissImmersiveSpace)
+                    contentEnv.downloadInitialContents()
+                }
         }.windowStyle(.plain)
         
         WindowGroup(id: WindowID.web.rawValue, for: String.self) { value in
             WebContentView()
+        }.defaultWindowPlacement { content, context in
+            // refernece: https://developer.apple.com/videos/play/wwdc2024/10149/
+            // Utility panel window placement brings the window close, generally within direct touch range.
+            return WindowPlacement(.utilityPanel)
         }
         
         ImmersiveSpace(id: ImmersiveSpaceID.main.rawValue) {

@@ -41,10 +41,7 @@ class ContentEnvironment {
 extension ContentEnvironment {
     func updateSpace() async {
         // Dismiss previous immersive space
-        guard let appModel = appModel, let open = openImmersiveSpace, let dismiss = dismissImmersiveSpace else { return }
-        if await appModel.immersiveSpaceState == .open {
-            await dismiss()
-        }
+        await SpaceController.shared.dismissImmersiveSpace()
         
         // Calcultae coordinate based on immersive coordinate space & Geographic location
         coordinateMapper.initRotationMatrix()
@@ -95,13 +92,7 @@ extension ContentEnvironment {
         }
         
         // Open immersivew view
-        await open(id: ImmersiveSpaceID.main.rawValue)
-    }
-    
-    func setImmersivewController(appModel: AppModel, open: OpenImmersiveSpaceAction, dismiss: DismissImmersiveSpaceAction) {
-        self.appModel = appModel
-        self.openImmersiveSpace = open
-        self.dismissImmersiveSpace = dismiss
+        await SpaceController.shared.openImmersiveSpace()
     }
 }
 

@@ -9,7 +9,7 @@ import SwiftUI
 import WebKit
 
 struct WebContentView: View {
-    @State private var currentURL: URL = URL(string: "https://www.apple.com")!
+    @State private var currentURL: URL = URL(string: "https://www.youtube.com/shorts/pHINXFbqjR8")!
 
     var body: some View {
         WebView(url: currentURL) { newURL in

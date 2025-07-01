@@ -72,7 +72,7 @@ enum TestPoseCoordinates {
                                           radiusInMeters: 10,
                                           count: 2)
         case .entitySequencing:
-            let objNames: [String] = ["000001_3d", "000001_3d", "000001_3d"]
+            let objNames: [String] = ["000001_3d"]
             
             var entities: [LocationEntity] = []
             for objName in objNames {
